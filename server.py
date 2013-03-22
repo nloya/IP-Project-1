@@ -15,6 +15,8 @@ class myThread (threading.Thread):
 		conn=0
 		while(True):
 			conn+=1
+			if(conn==142312345):
+				self.client.send("THANK YOU")
 
 
 def main():
@@ -29,8 +31,7 @@ def main():
 	conn = 0
 	while True:
 		conn+=1
-		client, addr = s.accept()
-		client.send("THANK YOU")
+		client, addr = s.accept()		
 		thread = myThread(client, addr)
 		thread.start()
 		
