@@ -7,22 +7,38 @@ import random
 str = "1. Add RFCs\n2. Request for RFC"
 
 class myThread (threading.Thread):
-	def __init__(self, s, opt):
+	def __init__(self, opt, sock=None, client=None, addr=None):
 		#self.host = host
 		#self.port = port
-		self.s = s
-		self.opt = opt
+		
 		threading.Thread.__init__(self)
+		self.opt = opt
+		if(client is None and addr is None):
+			#print("In if %s --- %s" %(self.opt,self))
+			self.sock = sock				
+		elif(sock is None):
+			#print("In elif %s --- %s" %(self.opt,self))
+			self.client = client
+			self.addr = addr
+		else:
+			print("Not enough or appropriate arguments")
+		#threading.Thread.__init__(self)
 	
 	def run(self):
-		if(opt=="server") # connect to server
+		if(cmp(self.opt,"server")==0): #connect to server
+			#print("In If %s --- %s" %(self.opt,self))
 			while(True):
-				print self.s.recv(1024)
+				print self.sock.recv(1024)
 				print str
-		elif(opt=="upload"):
-			while(True):
-				client,addr = self.s.accept()
-				
+		elif(cmp(self.opt,"upload")==0):
+			#print("In Elif %s --- %s" %(self.opt,self))
+			while(True):				
+				client,addr = self.sock.accept()				
+				thread = myThread("peer", client=client,addr=addr)
+				thread.start()
+		else: # self.opt == peer
+			self.client.send("Thanks man from Peer")
+			self.client.close()
 
 class RFC():
 	def __init__(self, rfcno, rfcdesc):
@@ -31,22 +47,25 @@ class RFC():
 
 def main():
 	rfc = list()
-	s = socket.socket()
-	print s
-	host = socket.gethostbyname(socket.gethostname()) #socket.gethostname() #6.14' #socket.gethostname()
-	port = 7734
 	
 	uploadServer = socket.socket()
 	uploadServerHost = socket.gethostbyname(socket.gethostname())
 	uploadServerPort = random.randint(49152,65535)
 	uploadServer.bind((uploadServerHost,uploadServerPort))
 	uploadServer.listen(5)
-	thread = myThread(uploadServer, "upload")
+	print("Listening on Host: %s & Port: %s" %(uploadServerHost,uploadServerPort))
+	thread1 = myThread("upload", sock=uploadServer)
+	thread1.start()
 	
 	#Creating thread for 
+	print("Server starts...")
+	s = socket.socket()
+	print s
+	host = socket.gethostbyname(socket.gethostname()) #socket.gethostname() #6.14' #socket.gethostname()
+	port = 7734
 	s.connect((host, port))
-	thread = myThread(s, "server")
-	thread.start()
+	thread2 = myThread("server", sock=s)
+	thread2.start()
 	#msg = pickle.loads(s.recv(1024))
 	count = 0
 	while(True):		
