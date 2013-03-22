@@ -11,12 +11,24 @@ class myThread (threading.Thread):
 		threading.Thread.__init__(self)
 	
 	def run(self):
-		self.client.send("Thank you for connecting")
-		conn=0
+		#self.client.send("Thank you for connecting")
 		while(True):
-			conn+=1
-			if(conn==142312345):
-				self.client.send("THANK YOU")
+			#self.client.send("Thank you for connecting")
+			msg = self.client.recv(1024)
+			#print msg		
+			line = msg.split('\n')
+			word = line[0].split(' ') 
+			if(cmp(word[0],'ADD')==0):
+				rfcno = word[2]
+				host = line[1].split(' ')[1]
+				port = line[2].split(' ')[1]
+				title = line[3].split(' ')[1]
+				print("%s %s %s %s" %(rfcno,host,port,title))
+			#print("Message: %s" %len(msg))
+			self.client.send("OK")
+		self.client.close()
+		
+
 
 
 def main():

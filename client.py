@@ -4,19 +4,24 @@ from collections import deque
 import threading
 import random
 
-str = "1. Add RFCs\n2. Request for RFC"
+str = "1. Add RFCs\n2. Request for RFC\n3. Send something to server"
+rfc = list()
+rfcsent = 0 # will keep counter of how many RFCs have been sent to the server and will only send those RFCs which have not been sent
 
 class myThread (threading.Thread):
-	def __init__(self, opt, sock=None, client=None, addr=None):
+	def __init__(self, opt, sock=None, client=None, addr=None, uphost=None, upport=None):
 		#self.host = host
 		#self.port = port
 		
 		threading.Thread.__init__(self)
 		self.opt = opt
-		if(client is None and addr is None):
+		if(client is None and addr is None): # Either came from upload/server
 			#print("In if %s --- %s" %(self.opt,self))
-			self.sock = sock				
-		elif(sock is None):
+			self.sock = sock
+			self.uphost = uphost
+			self.upport = upport
+			print("Info: %s %s %s" %(self.sock,self.uphost,self.upport))
+		elif(sock is None): # upload spawning a peer
 			#print("In elif %s --- %s" %(self.opt,self))
 			self.client = client
 			self.addr = addr
@@ -27,17 +32,25 @@ class myThread (threading.Thread):
 	def run(self):
 		if(cmp(self.opt,"server")==0): #connect to server
 			#print("In If %s --- %s" %(self.opt,self))
-			while(True):
-				print self.sock.recv(1024)
-				print str
+			global rfcsent
+			while(rfcsent != len(rfc)):
+				#self.sock.recv(1024)
+				self.sock.send("ADD RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(rfc[rfcsent].rfcno,socket.gethostbyname(socket.gethostname()),self.upport,rfc[rfcsent].rfcdesc))
+				self.sock.recv(1024) # blocking call
+				rfcsent+=1
+				#self.sock.recv(1024)
+				#print str
+			print str
+			self.sock.close()
 		elif(cmp(self.opt,"upload")==0):
 			#print("In Elif %s --- %s" %(self.opt,self))
 			while(True):				
 				client,addr = self.sock.accept()				
+				print("Info1: %s %s %s" %(self.sock,self.uphost,self.upport))
 				thread = myThread("peer", client=client,addr=addr)
 				thread.start()
 		else: # self.opt == peer
-			self.client.send("Thanks man from Peer")
+			self.client.send("Thanks from Peer")
 			self.client.close()
 
 class RFC():
@@ -46,26 +59,27 @@ class RFC():
 		self.rfcdesc = rfcdesc
 
 def main():
-	rfc = list()
-	
+	#rfcsent = 0
+	rfcno = raw_input("Enter RFC#: ")
+	rfcdesc = raw_input("Enter Title for RFC: ")		
+	rfc.append(RFC(rfcno,rfcdesc))
+	print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
 	uploadServer = socket.socket()
 	uploadServerHost = socket.gethostbyname(socket.gethostname())
 	uploadServerPort = random.randint(49152,65535)
 	uploadServer.bind((uploadServerHost,uploadServerPort))
 	uploadServer.listen(5)
 	print("Listening on Host: %s & Port: %s" %(uploadServerHost,uploadServerPort))
-	thread1 = myThread("upload", sock=uploadServer)
-	thread1.start()
+	thread = myThread("upload", sock=uploadServer,uphost=uploadServerHost,upport=uploadServerPort)
+	thread.start()
 	
 	#Creating thread for 
-	print("Server starts...")
-	s = socket.socket()
-	print s
-	host = socket.gethostbyname(socket.gethostname()) #socket.gethostname() #6.14' #socket.gethostname()
+	#print("Server starts...")
+	
+	#print s
+	host = socket.gethostbyname(socket.gethostname())
 	port = 7734
-	s.connect((host, port))
-	thread2 = myThread("server", sock=s)
-	thread2.start()
+	
 	#msg = pickle.loads(s.recv(1024))
 	count = 0
 	while(True):		
@@ -76,6 +90,13 @@ def main():
 			rfcdesc = raw_input("Enter Title for RFC: ")		
 			rfc.append(RFC(rfcno,rfcdesc))
 			print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
+			
+			print str
+		elif(option==3):
+			s = socket.socket()
+			s.connect((host, port))
+			thread = myThread("server", sock=s, uphost=uploadServerHost, upport=uploadServerPort)
+			thread.start()			
 			print str
 		else:
 			print("Incorrect Option Entered")
