@@ -5,12 +5,16 @@ import threading
 
 
 class myThread (threading.Thread):
-	def __init__(self, threadID):
-		self.threadID = threadID
+	def __init__(self, client, addr):
+		self.client = client
+		self.addr = addr
 		threading.Thread.__init__(self)
 	
-	def run(self, client, addr):
-		listen(client, addr)
+	def run(self):
+		self.client.send("Thank you for connecting")
+		conn=0
+		while(True):
+			conn+=1
 
 
 def main():
@@ -26,14 +30,21 @@ def main():
 	while True:
 		conn+=1
 		client, addr = s.accept()
-		thread = myThread(conn)
-		thread.run(client, addr)
-	
-	
+		client.send("THANK YOU")
+		thread = myThread(client, addr)
+		thread.start()
+		
+		
+		
+		
+		
+		
+		
+'''
 def listen(client, addr):
 	client.send("Thank you for connecting")
-	client.close()
-	'''
+	#client.close()
+	
 	if conn%2==0:
 		print 'Connection from', addr
 		client.send(pickle.dumps(prev))

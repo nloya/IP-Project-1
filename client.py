@@ -10,11 +10,13 @@ s.connect((host, port))
 
 #msg = pickle.loads(s.recv(1024))
 count = 0
-while(count <= 10000000):
+while(True):
+	print s.recv(1024)
+	'''
 	if(count%100000==0):
 		print s.recv(1024)
 	count+=1
-	
+	'''
 '''
 s1 = socket.socket()
 s1.bind((socket.gethostbyname(msg[0]) , msg[1]))
