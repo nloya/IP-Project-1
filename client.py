@@ -3,18 +3,25 @@ import socket
 from collections import deque
 import threading
 import random
+import time
 
-str = "1. Add RFCs\n2. Request for RFC\n3. Send something to server"
+str = "1. Add RFCs locally\n2. ADD RFCs to Server\n3. Lookup\n4. List"
 rfc = list()
 rfcsent = 0 # will keep counter of how many RFCs have been sent to the server and will only send those RFCs which have not been sent
 
+class RFC():
+	def __init__(self, rfcno, rfcdesc):
+		self.rfcno = rfcno
+		self.rfcdesc = rfcdesc
+
 class myThread (threading.Thread):
-	def __init__(self, opt, sock=None, client=None, addr=None, uphost=None, upport=None):
+	def __init__(self, opt, sock=None, client=None, addr=None, uphost=None, upport=None, option=None):
 		#self.host = host
 		#self.port = port
 		
 		threading.Thread.__init__(self)
 		self.opt = opt
+		self.option = option
 		if(client is None and addr is None): # Either came from upload/server
 			#print("In if %s --- %s" %(self.opt,self))
 			self.sock = sock
@@ -32,16 +39,26 @@ class myThread (threading.Thread):
 	def run(self):
 		if(cmp(self.opt,"server")==0): #connect to server
 			#print("In If %s --- %s" %(self.opt,self))
-			global rfcsent
-			while(rfcsent != len(rfc)):
-				#self.sock.recv(1024)
-				self.sock.send("ADD RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(rfc[rfcsent].rfcno,socket.gethostbyname(socket.gethostname()),self.upport,rfc[rfcsent].rfcdesc))
-				self.sock.recv(1024) # blocking call
-				rfcsent+=1
-				#self.sock.recv(1024)
+			if(self.option==2):
+				global rfcsent
+				while(rfcsent != len(rfc)):
+					#self.sock.recv(1024)
+					self.sock.send("ADD RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(rfc[rfcsent].rfcno,socket.gethostbyname(socket.gethostname()),self.upport,rfc[rfcsent].rfcdesc))
+					print(self.sock.recv(1024)) # blocking call
+					rfcsent+=1
+					#self.sock.recv(1024)
+					#print str
 				#print str
-			print str
-			self.sock.close()
+				#self.sock.close()
+			elif(self.option==3):
+				temprfcno = raw_input("Enter RFC# to query to Server: ")
+				temptitle = raw_input("Enter the Title of the RFC: ")
+				self.sock.send("LOOKUP RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(temprfcno,socket.gethostbyname(socket.gethostname()),self.upport,temptitle))
+				self.sock.recv(4096)
+			elif(self.option==4):
+				self.sock.send("LIST ALL P2P-CI/1.0\nHost: %s\nPort: %s\n" %(socket.gethostbyname(socket.gethostname()),self.upport))
+				self.sock.recv(4096)
+			
 		elif(cmp(self.opt,"upload")==0):
 			#print("In Elif %s --- %s" %(self.opt,self))
 			while(True):				
@@ -52,11 +69,6 @@ class myThread (threading.Thread):
 		else: # self.opt == peer
 			self.client.send("Thanks from Peer")
 			self.client.close()
-
-class RFC():
-	def __init__(self, rfcno, rfcdesc):
-		self.rfcno = rfcno
-		self.rfcdesc = rfcdesc
 
 def main():
 	#rfcsent = 0
@@ -82,8 +94,9 @@ def main():
 	
 	#msg = pickle.loads(s.recv(1024))
 	count = 0
-	while(True):		
-		#print "1. Add RFCs\n2. Request for RFC"
+	while(True):
+		time.sleep(3)
+		print str
 		option = input()
 		if(option==1):		
 			rfcno = raw_input("Enter RFC#: ")
@@ -91,16 +104,26 @@ def main():
 			rfc.append(RFC(rfcno,rfcdesc))
 			print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
 			
-			print str
+			#print str
+		elif(option==2):
+			s = socket.socket()
+			s.connect((host, port))
+			thread = myThread("server", sock=s, uphost=uploadServerHost, upport=uploadServerPort, option=2)
+			thread.start()			
+			#print str
 		elif(option==3):
 			s = socket.socket()
 			s.connect((host, port))
-			thread = myThread("server", sock=s, uphost=uploadServerHost, upport=uploadServerPort)
-			thread.start()			
-			print str
+			thread = myThread("server", sock=s, uphost=uploadServerHost, upport=uploadServerPort, option=3)
+			thread.start()
+		elif(option==4):
+			s = socket.socket()
+			s.connect((host, port))
+			thread = myThread("server", sock=s, uphost=uploadServerHost, upport=uploadServerPort, option=4)
+			thread.start()
 		else:
 			print("Incorrect Option Entered")
-			print str
+			#print str
 			
 main()
 		

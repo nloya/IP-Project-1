@@ -2,6 +2,48 @@ import socket
 import pickle
 import threading
 
+peerlist = list()
+rfc = list()
+
+def displayPeer():
+	for p in peerlist:
+		print("P: %s %s" %(p.host,p.port))
+
+def displayRFC():
+	for r in rfc:
+		for hp in r.hostportlist:
+			print("R: %s %s %s %s" %(r.rfcno,r.title,hp.host,hp.port))
+
+class Peers():
+	def __init__(self,host,port):
+		self.host = host
+		self.port = port
+
+	@staticmethod
+	def addPeer(host,port):
+		for p in peerlist:
+			if p.host == host and p.port == port:				
+				return
+		peerlist.append(Peers(host,port))
+
+class RFC():
+	def __init__(self,rfcno,title,host,port):
+		self.rfcno = rfcno
+		self.title = title
+		self.hostportlist = list()
+		self.hostportlist.append(Peers(host,port))
+	
+	@staticmethod
+	def addRFC(rfcno,title,host,port):
+		for r in rfc:
+			if r.rfcno == rfcno:
+				for hp in r.hostportlist:
+					if hp.host == host and hp.port == port:
+						return				
+				r.hostportlist.append(Peers(host,port))
+				return
+		rfc.append(RFC(rfcno,title,host,port))
+                
 
 
 class myThread (threading.Thread):
@@ -23,9 +65,22 @@ class myThread (threading.Thread):
 				host = line[1].split(' ')[1]
 				port = line[2].split(' ')[1]
 				title = line[3].split(' ')[1]
-				print("%s %s %s %s" %(rfcno,host,port,title))
-			#print("Message: %s" %len(msg))
-			self.client.send("OK")
+				print("\n%s %s %s %s" %(rfcno,host,port,title))
+				#p = Peers(host,port)
+				Peers.addPeer(host,port) # adds only if the peer is not already present
+				displayPeer()
+				RFC.addRFC(rfcno,title,host,port)
+				displayRFC()
+				#print("Message: %s" %len(msg))
+				self.client.send("P2P-CI/1.0 200 OK\nRFC %s %s %s %s" %(rfcno,title,host,port))
+			elif(cmp(word[0],'LOOKUP')==0):
+				rfcno = word[2]
+				
+				for r in rfc:
+					if r.rfcno == rfcno:
+						for hp in r.hostportlist:
+							msg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
+				self.client.send("P2P-CI/1.0 200 OK\n%s" %msg)
 		self.client.close()
 		
 
