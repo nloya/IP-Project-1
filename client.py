@@ -6,6 +6,8 @@ import random
 import time
 import os
 import sys
+import platform
+import datetime
 
 ipstr = "1. Add RFCs locally\n2. ADD RFCs to Server\n3. Lookup\n4. List"
 rfc = list()
@@ -60,8 +62,24 @@ class myThread (threading.Thread):
 				thread = myThread("replytopeer", client=client,addr=addr)
 				thread.start()
 		else: # cmp(self.opt,"replytopeer")==0
-			print self.client.recv(1024)
-			self.client.send("Cool")
+			msg = self.client.recv(1024)
+			lines = msg.split('\n')
+			words = lines[0].split(' ')
+			if(cmp(words[0],"GET")==0):
+				t = datetime.datetime.now()				
+				try:					
+					filename = 'C:\Users\Niks\Downloads\Tmp\%s.txt' %words[2]
+					f = open(filename, 'r')
+					statbuf = os.stat(filename)	
+					msg = "P2P-CI/1.0 200 OK\nDate: %s, %s %s %s %s\nOS: %s %s\nLast Modified: %s\nContent-Length: %s\nContent-Type: text/plain\n" \
+					   %(t.strftime("%a"),t.strftime("%d"),t.strftime("%b"),t.strftime("%Y"),t.strftime("%H:%M:%S"),platform.system(),os.name,statbuf.st_mtime,statbuf.st_size)
+					msg+=f.read()												
+				except IOError as e:
+					msg = "P2P-CI/1.0 404 Not Found\nDate: %s, %s %s %s %s\nOS: %s %s\nLast Modified: %s\nContent-Length: %s\nContent-Type: text/plain\n" \
+					   %(t.strftime("%a"),t.strftime("%d"),t.strftime("%b"),t.strftime("%Y"),t.strftime("%H:%M:%S"),platform.system(),os.name,statbuf.st_mtime,statbuf.st_size)
+					print "I/O error({0}): {1}".format(e.errno, e.strerror)
+					msg+="File Not Found"
+			self.client.send(msg)
 			"""
 		elif(cmp(self.opt,"reqfrompeer")==0): # self.opt == peer
 			print self.msg
@@ -126,10 +144,10 @@ class pseudoThread():
 
 def main():
 	#rfcsent = 0
-	rfcno = getinput("Enter RFC#: ")
-	rfcdesc = raw_input("Enter Title for RFC: ")		
-	rfc.append(RFC(rfcno,rfcdesc))
-	print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
+	#rfcno = getinput("Enter RFC#: ")
+	#rfcdesc = raw_input("Enter Title for RFC: ")		
+	#rfc.append(RFC(rfcno,rfcdesc))
+	#print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
 	uploadServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	uploadServerHost = socket.gethostbyname(socket.gethostname())
 	uploadServerPort = random.randint(49152,65535)
@@ -157,11 +175,21 @@ def main():
 				#rfcno = raw_input("Enter RFC#: ")
 				#rfcdesc = raw_input("Enter Title for RFC: ")		
 				rfcno = getinput("Enter RFC#: ")
-				rfcdesc = raw_input("Enter Title for RFC: ")		
-				rfc.append(RFC(rfcno,rfcdesc))
-				print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
-				
-				#print ipstr
+				rfcdesc = raw_input("Enter Title for RFC: ")
+				rfcPresent = False
+				for r in rfc:
+					if r.rfcno == rfcno:						
+						rfcPresent = True
+						break
+				if(rfcPresent):
+					print("RFC already exists")
+				else:
+					rfc.append(RFC(rfcno,rfcdesc))
+					f = file('C:\Users\Niks\Downloads\Tmp\%s.txt' %rfcno, 'w')
+					f.write(str(rfcno) + "  " + rfcdesc)
+					f.close()
+					print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))				
+					#print ipstr
 			elif(option>=2 and option <= 4):
 				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				s.connect((host, port))
@@ -185,10 +213,12 @@ def getdata(line):
 	words = line.split(" ")
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	tport = int(words[3])
-	msg = "GET RFC %s P2P-CI/1.0\nHost: %s\nOS: %s %s" %(words[0], words[2], sys.platform, os.name)
+	msg = "GET RFC %s P2P-CI/1.0\nHost: %s\nOS: %s %s" %(words[0], words[2], platform.system(), os.name)
 	s.connect((words[2], tport))
 	s.send(msg)
-	print s.recv(1024)
+	msg = s.recv(1024)
+	print msg
+	s.close()
 	#thread = myThread("reqfrompeer",sock=s, msg = msg)
 	#thread.start()
 	
@@ -217,3 +247,10 @@ while True:
 	client.close()
 #s.close()
 '''
+
+
+""" TODO:
+
+
+
+"""
