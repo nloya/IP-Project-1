@@ -75,19 +75,30 @@ class myThread (threading.Thread):
 				self.client.send("P2P-CI/1.0 200 OK\nRFC %s %s %s %s" %(rfcno,title,host,port))
 			elif(cmp(word[0],'LOOKUP')==0):
 				rfcno = word[2]
-				
+				flag = False
+				tempmsg = ""
 				for r in rfc:
 					if r.rfcno == rfcno:
+						flag = True
 						for hp in r.hostportlist:
-							msg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
-				self.client.send("P2P-CI/1.0 200 OK\n%s" %msg)
+							tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
+				if flag:
+					self.client.send("P2P-CI/1.0 200 OK\n%s" %tempmsg)
+				else:
+					self.client.send("P2P-CI/1.0 404 Not Found\n")
+			elif(cmp(word[0],'LIST')==0):
+				tempmsg = ""
+				for r in rfc:
+					for hp in r.hostportlist:
+						tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
+				self.client.send("P2P-CI/1.0 200 OK\n%s" %tempmsg)
 		self.client.close()
 		
 
 
 
 def main():
-	s = socket.socket()
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	print s
 	host = socket.gethostbyname(socket.gethostname())
 	port = 7734

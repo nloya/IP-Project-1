@@ -49,16 +49,16 @@ class myThread (threading.Thread):
 					#self.sock.recv(1024)
 					#print str
 				#print str
+				#print "HERE"
 				#self.sock.close()
 			elif(self.option==3):
 				temprfcno = raw_input("Enter RFC# to query to Server: ")
 				temptitle = raw_input("Enter the Title of the RFC: ")
 				self.sock.send("LOOKUP RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(temprfcno,socket.gethostbyname(socket.gethostname()),self.upport,temptitle))
-				self.sock.recv(4096)
+				print self.sock.recv(4096)
 			elif(self.option==4):
 				self.sock.send("LIST ALL P2P-CI/1.0\nHost: %s\nPort: %s\n" %(socket.gethostbyname(socket.gethostname()),self.upport))
-				self.sock.recv(4096)
-			
+				print self.sock.recv(4096)			
 		elif(cmp(self.opt,"upload")==0):
 			#print("In Elif %s --- %s" %(self.opt,self))
 			while(True):				
@@ -76,7 +76,7 @@ def main():
 	rfcdesc = raw_input("Enter Title for RFC: ")		
 	rfc.append(RFC(rfcno,rfcdesc))
 	print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
-	uploadServer = socket.socket()
+	uploadServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	uploadServerHost = socket.gethostbyname(socket.gethostname())
 	uploadServerPort = random.randint(49152,65535)
 	uploadServer.bind((uploadServerHost,uploadServerPort))
@@ -95,7 +95,7 @@ def main():
 	#msg = pickle.loads(s.recv(1024))
 	count = 0
 	while(True):
-		time.sleep(3)
+		#time.sleep(3)
 		print str
 		option = input()
 		if(option==1):		
@@ -106,18 +106,20 @@ def main():
 			
 			#print str
 		elif(option==2):
-			s = socket.socket()
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.connect((host, port))
 			thread = myThread("server", sock=s, uphost=uploadServerHost, upport=uploadServerPort, option=2)
 			thread.start()			
+			thread.join()
 			#print str
 		elif(option==3):
-			s = socket.socket()
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.connect((host, port))
 			thread = myThread("server", sock=s, uphost=uploadServerHost, upport=uploadServerPort, option=3)
 			thread.start()
+			thread.join()
 		elif(option==4):
-			s = socket.socket()
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.connect((host, port))
 			thread = myThread("server", sock=s, uphost=uploadServerHost, upport=uploadServerPort, option=4)
 			thread.start()
@@ -139,7 +141,7 @@ main()
 	count+=1
 	'''
 '''
-s1 = socket.socket()
+s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s1.bind((socket.gethostbyname(msg[0]) , msg[1]))
 s1.listen(5)
 
