@@ -75,10 +75,11 @@ class myThread (threading.Thread):
 				self.client.send("P2P-CI/1.0 200 OK\nRFC %s %s %s %s" %(rfcno,title,host,port))
 			elif(cmp(word[0],'LOOKUP')==0):
 				rfcno = word[2]
+				title = line[3].split(' ')[1]
 				flag = False
 				tempmsg = ""
 				for r in rfc:
-					if r.rfcno == rfcno:
+					if r.rfcno == rfcno and r.title == title:
 						flag = True
 						for hp in r.hostportlist:
 							tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
