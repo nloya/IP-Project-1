@@ -4,8 +4,10 @@ from collections import deque
 import threading
 import random
 import time
+import os
+import sys
 
-str = "1. Add RFCs locally\n2. ADD RFCs to Server\n3. Lookup\n4. List"
+ipstr = "1. Add RFCs locally\n2. ADD RFCs to Server\n3. Lookup\n4. List"
 rfc = list()
 rfcsent = 0 # will keep counter of how many RFCs have been sent to the server and will only send those RFCs which have not been sent
 
@@ -15,13 +17,20 @@ class RFC():
 		self.rfcdesc = rfcdesc
 
 class myThread (threading.Thread):
-	def __init__(self, opt, sock=None, client=None, addr=None, uphost=None, upport=None, option=None):
+	def __init__(self, opt, sock=None, client=None, addr=None, uphost=None, upport=None, option=None, msg=None):
 		#self.host = host
 		#self.port = port
 		
 		threading.Thread.__init__(self)
 		self.opt = opt
 		self.option = option
+		self.sock = sock
+		self.uphost = uphost
+		self.upport = upport
+		self.client = client
+		self.addr = addr
+		self.msg = msg
+		"""
 		if(client is None and addr is None): # Either came from upload/server
 			#print("In if %s --- %s" %(self.opt,self))
 			self.sock = sock
@@ -35,40 +44,31 @@ class myThread (threading.Thread):
 		else:
 			print("Not enough or appropriate arguments")
 		#threading.Thread.__init__(self)
+		"""
 	
 	def run(self):
-		if(cmp(self.opt,"server")==0): #connect to server
-			#print("In If %s --- %s" %(self.opt,self))
-			if(self.option==2):
-				global rfcsent
-				while(rfcsent != len(rfc)):
-					#self.sock.recv(1024)
-					self.sock.send("ADD RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(rfc[rfcsent].rfcno,socket.gethostbyname(socket.gethostname()),self.upport,rfc[rfcsent].rfcdesc))
-					print(self.sock.recv(1024)) # blocking call
-					rfcsent+=1
-					#self.sock.recv(1024)
-					#print str
-				#print str
-				#print "HERE"
-				#self.sock.close()
-			elif(self.option==3):
-				temprfcno = raw_input("Enter RFC# to query to Server: ")
-				temptitle = raw_input("Enter the Title of the RFC: ")
-				self.sock.send("LOOKUP RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(temprfcno,socket.gethostbyname(socket.gethostname()),self.upport,temptitle))
-				print self.sock.recv(4096)
-			elif(self.option==4):
-				self.sock.send("LIST ALL P2P-CI/1.0\nHost: %s\nPort: %s\n" %(socket.gethostbyname(socket.gethostname()),self.upport))
-				print self.sock.recv(4096)			
-		elif(cmp(self.opt,"upload")==0):
+		if(cmp(self.opt,"upload")==0):
 			#print("In Elif %s --- %s" %(self.opt,self))
 			while(True):				
-				client,addr = self.sock.accept()				
+				client,addr = self.sock.accept()
+				print('*'*40)
+				print(client)
+				print(addr)
+				print('*'*40) 
 				print("Info1: %s %s %s" %(self.sock,self.uphost,self.upport))
-				thread = myThread("peer", client=client,addr=addr)
+				#s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				thread = myThread("replytopeer", client=client,addr=addr)
 				thread.start()
-		else: # self.opt == peer
-			self.client.send("Thanks from Peer")
-			self.client.close()
+		else: # cmp(self.opt,"replytopeer")==0
+			print self.client.recv(1024)
+			self.client.send("Cool")
+			"""
+		elif(cmp(self.opt,"reqfrompeer")==0): # self.opt == peer
+			print self.msg
+			self.sock.send(self.msg)
+			print self.sock.recv(1024)
+			#self.sock.close()
+			"""
 
 class pseudoThread():
 	def __init__(self, opt, sock=None, client=None, addr=None, uphost=None, upport=None, option=None):
@@ -95,22 +95,38 @@ class pseudoThread():
 					print(self.sock.recv(1024)) # blocking call
 					rfcsent+=1
 					#self.sock.recv(1024)
-					#print str
-				#print str
+					#print ipstr
+				#print ipstr
 				#print "HERE"
 				#self.sock.close()
-			elif(self.option==3):
-				temprfcno = raw_input("Enter RFC# to query to Server: ")
+			elif(self.option==3): # Lookup
+				temprfcno = getinput("Enter RFC# to query to Server: ")
 				temptitle = raw_input("Enter the Title of the RFC: ")
 				self.sock.send("LOOKUP RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(temprfcno,socket.gethostbyname(socket.gethostname()),self.upport,temptitle))
-				print self.sock.recv(4096)
-			elif(self.option==4):
+				print('*'*40)
+				msg=self.sock.recv(4096).rstrip()				
+				print('*'*40)
+				lines = msg.split('\n')				
+				print('*'*40)
+				#print("Select Option")
+				for i in range(1,len(lines)):
+					print(str(i) + " --> " + lines[i])
+				print("0 --> Do Nothing")
+				x = input("Select Option: ")				
+				getdata(lines[x])
+			elif(self.option==4): # List
 				self.sock.send("LIST ALL P2P-CI/1.0\nHost: %s\nPort: %s\n" %(socket.gethostbyname(socket.gethostname()),self.upport))
-				print self.sock.recv(4096)			
+				msg=self.sock.recv(4096).rstrip()				
+				print('*'*40)
+				lines = msg.split('\n')				
+				print('*'*40)
+				for i in range(1,len(lines)):
+					print(str(i) + " --> " + lines[i])
+				print("0 --> Do Nothing")			
 
 def main():
 	#rfcsent = 0
-	rfcno = raw_input("Enter RFC#: ")
+	rfcno = getinput("Enter RFC#: ")
 	rfcdesc = raw_input("Enter Title for RFC: ")		
 	rfc.append(RFC(rfcno,rfcdesc))
 	print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
@@ -134,16 +150,18 @@ def main():
 	count = 0
 	while(True):
 		#time.sleep(3)
-		print str
+		print ipstr
 		try:
-			option = int(raw_input())		
+			option = int(raw_input()) # input() gives integer and raw_input() gives string
 			if(option==1):		
-				rfcno = raw_input("Enter RFC#: ")
+				#rfcno = raw_input("Enter RFC#: ")
+				#rfcdesc = raw_input("Enter Title for RFC: ")		
+				rfcno = getinput("Enter RFC#: ")
 				rfcdesc = raw_input("Enter Title for RFC: ")		
 				rfc.append(RFC(rfcno,rfcdesc))
 				print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
 				
-				#print str
+				#print ipstr
 			elif(option>=2 and option <= 4):
 				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				s.connect((host, port))
@@ -151,10 +169,30 @@ def main():
 				pthread.start()						
 			else:
 				print("Incorrect Option Entered")
-				#print str
+				#print ipstr
 		except ValueError:
 			print("Invalid Characters Entered")
-			
+
+def getinput(msg):
+	try:
+		return int(raw_input(msg))
+	except ValueError:
+		print("Invalid Characters enterd")
+		return getinput(msg)
+
+def getdata(line):
+	print("Line: " + line)
+	words = line.split(" ")
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	tport = int(words[3])
+	msg = "GET RFC %s P2P-CI/1.0\nHost: %s\nOS: %s %s" %(words[0], words[2], sys.platform, os.name)
+	s.connect((words[2], tport))
+	s.send(msg)
+	print s.recv(1024)
+	#thread = myThread("reqfrompeer",sock=s, msg = msg)
+	#thread.start()
+	
+
 main()
 		
 		

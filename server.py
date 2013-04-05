@@ -83,6 +83,7 @@ class myThread (threading.Thread):
 						flag = True
 						for hp in r.hostportlist:
 							tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
+				tempmsg.strip()
 				if flag:
 					self.client.send("P2P-CI/1.0 200 OK\n%s" %tempmsg)
 				else:
@@ -92,6 +93,7 @@ class myThread (threading.Thread):
 				for r in rfc:
 					for hp in r.hostportlist:
 						tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
+				tempmsg.strip()
 				self.client.send("P2P-CI/1.0 200 OK\n%s" %tempmsg)
 		self.client.close()
 		
@@ -110,7 +112,11 @@ def main():
 	conn = 0
 	while True:
 		conn+=1
-		client, addr = s.accept()		
+		client, addr = s.accept()
+		print('*'*40)
+		print(client)
+		print(addr)
+		print('*'*40)
 		thread = myThread(client, addr)
 		thread.start()
 		
