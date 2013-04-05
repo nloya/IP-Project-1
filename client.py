@@ -68,7 +68,7 @@ class myThread (threading.Thread):
 			if(cmp(words[0],"GET")==0):
 				t = datetime.datetime.now()				
 				try:					
-					filename = 'C:\Users\Niks\Downloads\Tmp\%s.txt' %words[2]
+					filename = 'C:\Users\Niks\Downloads\Tmp\IP\%s.txt' %words[2]
 					f = open(filename, 'r')
 					statbuf = os.stat(filename)	
 					msg = "P2P-CI/1.0 200 OK\nDate: %s, %s %s %s %s\nOS: %s %s\nLast Modified: %s\nContent-Length: %s\nContent-Type: text/plain\n" \
@@ -185,10 +185,10 @@ def main():
 					print("RFC already exists")
 				else:
 					rfc.append(RFC(rfcno,rfcdesc))
-					f = file('C:\Users\Niks\Downloads\Tmp\%s.txt' %rfcno, 'w')
+					f = file('C:\Users\Niks\Downloads\Tmp\IP\%s.txt' %rfcno, 'w')
 					f.write(str(rfcno) + "  " + rfcdesc)
 					f.close()
-					print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))				
+					print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))	
 					#print ipstr
 			elif(option>=2 and option <= 4):
 				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -213,44 +213,25 @@ def getdata(line):
 	words = line.split(" ")
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	tport = int(words[3])
+	trfcno = words[0] # used as string below
 	msg = "GET RFC %s P2P-CI/1.0\nHost: %s\nOS: %s %s" %(words[0], words[2], platform.system(), os.name)
 	s.connect((words[2], tport))
 	s.send(msg)
 	msg = s.recv(1024)
 	print msg
+	lines = msg.split('\n')
+	words = lines[0].split(' ')
+	if(cmp(words[0],'P2P-CI/1.0')==0 and cmp(words[1],'200')==0):
+		try:
+			f = file('C:\Users\Niks\Downloads\Tmp\IP\%s_%s.txt' %(trfcno, str(tport)), 'w')
+			for i in range(6,len(lines)):
+				f.write(lines[i])
+			f.close()
+		except IOError as e:
+			print "File Not Found"
 	s.close()
 	#thread = myThread("reqfrompeer",sock=s, msg = msg)
 	#thread.start()
 	
 
 main()
-		
-		
-		
-		
-		
-		
-		
-'''
-	if(count%100000==0):
-		print s.recv(1024)
-	count+=1
-	'''
-'''
-s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s1.bind((socket.gethostbyname(msg[0]) , msg[1]))
-s1.listen(5)
-
-while True:
-	client,addr = s1.accept()
-	client.send("Msg from Client")
-	client.close()
-#s.close()
-'''
-
-
-""" TODO:
-
-
-
-"""
