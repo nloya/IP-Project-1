@@ -31,22 +31,7 @@ class myThread (threading.Thread):
 		self.upport = upport
 		self.client = client
 		self.addr = addr
-		self.msg = msg
-		"""
-		if(client is None and addr is None): # Either came from upload/server
-			#print("In if %s --- %s" %(self.opt,self))
-			self.sock = sock
-			self.uphost = uphost
-			self.upport = upport
-			print("Info: %s %s %s" %(self.sock,self.uphost,self.upport))
-		elif(sock is None): # upload spawning a peer
-			#print("In elif %s --- %s" %(self.opt,self))
-			self.client = client
-			self.addr = addr
-		else:
-			print("Not enough or appropriate arguments")
-		#threading.Thread.__init__(self)
-		"""
+		self.msg = msg		
 	
 	def run(self):
 		if(cmp(self.opt,"upload")==0):
@@ -68,7 +53,7 @@ class myThread (threading.Thread):
 			if(cmp(words[0],"GET")==0):
 				t = datetime.datetime.now()				
 				try:					
-					filename = 'C:\Users\Niks\Downloads\Tmp\IP\%s.txt' %words[2]
+					filename = '%s.txt' %words[2]
 					f = open(filename, 'r')
 					statbuf = os.stat(filename)	
 					msg = "P2P-CI/1.0 200 OK\nDate: %s, %s %s %s %s\nOS: %s %s\nLast Modified: %s\nContent-Length: %s\nContent-Type: text/plain\n" \
@@ -80,13 +65,6 @@ class myThread (threading.Thread):
 					print "I/O error({0}): {1}".format(e.errno, e.strerror)
 					msg+="File Not Found"
 			self.client.send(msg)
-			"""
-		elif(cmp(self.opt,"reqfrompeer")==0): # self.opt == peer
-			print self.msg
-			self.sock.send(self.msg)
-			print self.sock.recv(1024)
-			#self.sock.close()
-			"""
 
 class pseudoThread():
 	def __init__(self, opt, sock=None, client=None, addr=None, uphost=None, upport=None, option=None):
@@ -130,8 +108,9 @@ class pseudoThread():
 				for i in range(1,len(lines)):
 					print(str(i) + " --> " + lines[i])
 				print("0 --> Do Nothing")
-				x = input("Select Option: ")				
-				getdata(lines[x])
+				x = input("Select Option: ")
+				if (x>=1 and x<len(lines)):
+					getdata(lines[x])
 			elif(self.option==4): # List
 				self.sock.send("LIST ALL P2P-CI/1.0\nHost: %s\nPort: %s\n" %(socket.gethostbyname(socket.gethostname()),self.upport))
 				msg=self.sock.recv(4096).rstrip()				
@@ -140,7 +119,7 @@ class pseudoThread():
 				print('*'*40)
 				for i in range(1,len(lines)):
 					print(str(i) + " --> " + lines[i])
-				print("0 --> Do Nothing")			
+				#print("0 --> Do Nothing")			
 
 def main():
 	#rfcsent = 0
@@ -185,7 +164,7 @@ def main():
 					print("RFC already exists")
 				else:
 					rfc.append(RFC(rfcno,rfcdesc))
-					f = file('C:\Users\Niks\Downloads\Tmp\IP\%s.txt' %rfcno, 'w')
+					f = file('%s.txt' %rfcno, 'w')
 					f.write(str(rfcno) + "  " + rfcdesc)
 					f.close()
 					print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))	
@@ -223,7 +202,7 @@ def getdata(line):
 	words = lines[0].split(' ')
 	if(cmp(words[0],'P2P-CI/1.0')==0 and cmp(words[1],'200')==0):
 		try:
-			f = file('C:\Users\Niks\Downloads\Tmp\IP\%s_%s.txt' %(trfcno, str(tport)), 'w')
+			f = file('%s_%s.txt' %(trfcno, str(tport)), 'w')
 			for i in range(6,len(lines)):
 				f.write(lines[i])
 			f.close()
