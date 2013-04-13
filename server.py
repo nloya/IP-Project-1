@@ -1,9 +1,8 @@
 import socket
 import pickle
 import threading
-import thread
 
-lock = thread.allocate_lock()
+lock = threading.Lock()
 peerlist = list()
 rfc = list()
 
@@ -59,21 +58,21 @@ class myThread (threading.Thread):
 		self.addr = addr # ('169.254.96.162', 57761)
 		
 	
-	def run(self):
-		#self.client.send("Thank you for connecting")
-		#while(True):
-		#self.client.send("Thank you for connecting")
+	def run(self):		
 		host =""
 		port = ""
 		while True:
 			try:
-				msg = self.client.recv(1024)				
-				#print msg		
+				msg = self.client.recv(1024)
+				#print ("Message: %s" %msg)
+				msg = msg.decode('UTF-8')
+				#print ("Message: %s" %msg)
 				line = msg.split('\n')
+				#print("Line: %s" %line)
 				word = line[0].split(' ')
-				host = line[1].split(' ')[1]
+				host = line[1].split(' ')[1]			
 				port = line[2].split(' ')[1]
-				if(cmp(word[0],'ADD')==0):
+				if(word[0]=='ADD'):
 					rfcno = word[2]					
 					title = line[3].split(' ')[1]
 					print("\n%s %s %s %s" %(rfcno,host,port,title))
@@ -85,8 +84,9 @@ class myThread (threading.Thread):
 					lock.release()
 					#displayRFC()
 					#print("Message: %s" %len(msg))
-					self.client.send("P2P-CI/1.0 200 OK\nRFC %s %s %s %s" %(rfcno,title,host,port))
-				elif(cmp(word[0],'LOOKUP')==0):
+					tmpmsg = "P2P-CI/1.0 200 OK\nRFC %s %s %s %s" %(rfcno,title,host,port)
+					self.client.send(bytes(tmpmsg, 'UTF-8'))
+				elif(word[0]=='LOOKUP'):
 					rfcno = word[2]
 					title = line[3].split(' ')[1]
 					flag = False
@@ -100,34 +100,38 @@ class myThread (threading.Thread):
 					lock.release()
 					tempmsg.strip()
 					if flag:
-						self.client.send("P2P-CI/1.0 200 OK\n%s" %tempmsg)
+						tmpmsg = "P2P-CI/1.0 200 OK\n%s" %tempmsg
+						self.client.send(bytes(tmpmsg,'UTF-8'))
 					else:
-						self.client.send("P2P-CI/1.0 404 Not Found\n")
-				elif(cmp(word[0],'LIST')==0):
+						tmpmsg = "P2P-CI/1.0 404 Not Found\n"
+						self.client.send(bytes(tmpmsg,'UTF-8'))
+				elif(word[0]=='LIST'):
 					tempmsg = ""
 					lock.acquire()
 					for r in rfc:
 						for hp in r.hostportlist:
 							tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
 					lock.release()
+					displayRFC()
 					tempmsg.strip()
-					self.client.send("P2P-CI/1.0 200 OK\n%s" %tempmsg)
-			except Exception, e:
+					tmpmsg = "P2P-CI/1.0 200 OK\n%s" %tempmsg
+					print(tmpmsg)
+					self.client.send(bytes(tmpmsg,'UTF-8'))			
+			except Exception as e:
 				print(self.addr[0] + "  Client ends connection  " + str(self.addr[1]))
 				#print(host + "  Client ends connection  " + port)   
 				displayRFC()
-				print(host + "  Client ends connection  " + port)
+				print(host + "  Client's Upload Server also goes down  " + port)
 				RFC.remRFC(host, port)
 				displayRFC()
 				self.client.close()
 				break
-		
-
+			
 
 
 def main():
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	print s
+	print(s)
 	host = socket.gethostbyname(socket.gethostname())
 	port = 7734
 	#print host
@@ -143,6 +147,6 @@ def main():
 		print(addr)
 		print('*'*40)
 		thread = myThread(client, addr)
-		thread.start()
+		thread.start()		
 	
 main()
