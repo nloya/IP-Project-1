@@ -1,6 +1,6 @@
 import socket
-import pickle
 import threading
+import re
 
 lock = threading.Lock()
 peerlist = list()
@@ -63,67 +63,73 @@ class myThread (threading.Thread):
 		port = ""
 		while True:
 			try:
-				msg = self.client.recv(1024)
-				#print ("Message: %s" %msg)
-				msg = msg.decode('UTF-8')
-				#print ("Message: %s" %msg)
+				msg = self.client.recv(1024)				
+				msg = msg.decode('UTF-8')				
 				line = msg.split('\n')
-				#print("Line: %s" %line)
+				
 				word = line[0].split(' ')
 				host = line[1].split(' ')[1]			
 				port = line[2].split(' ')[1]
-				if(word[0]=='ADD'):
-					rfcno = word[2]					
-					title = line[3].split(' ')[1]
-					print("\n%s %s %s %s" %(rfcno,host,port,title))
-					#p = Peers(host,port)
-					lock.acquire()
-					Peers.addPeer(host,port) # adds only if the peer is not already present
-					#displayPeer()
-					RFC.addRFC(rfcno,title,host,port)
-					lock.release()
-					#displayRFC()
-					#print("Message: %s" %len(msg))
-					tmpmsg = "P2P-CI/1.0 200 OK\nRFC %s %s %s %s" %(rfcno,title,host,port)
-					self.client.send(bytes(tmpmsg, 'UTF-8'))
-				elif(word[0]=='LOOKUP'):
-					rfcno = word[2]
-					title = line[3].split(' ')[1]
-					flag = False
-					tempmsg = ""
-					lock.acquire()
-					for r in rfc:
-						if r.rfcno == rfcno and r.title == title:
-							flag = True
+				if(word[3] == 'P2P-CI/1.0'):
+					if(word[0]=='ADD'):
+						rfcno = word[2]					
+						''' use of RegEx to get spaced title'''
+						title = re.split(' ', line[3], 1)[1] 
+						#print("\n%s %s %s %s" %(rfcno,host,port,title))
+						#p = Peers(host,port)
+						lock.acquire()
+						Peers.addPeer(host,port) # adds only if the peer is not already present
+						#displayPeer()
+						RFC.addRFC(rfcno,title,host,port)
+						lock.release()
+						#displayRFC()
+						#print("Message: %s" %len(msg))
+						tmpmsg = "P2P-CI/1.0 200 OK\nRFC %s %s %s %s" %(rfcno,title,host,port)
+						self.client.send(bytes(tmpmsg, 'UTF-8'))
+					elif(word[0]=='LOOKUP'):
+						rfcno = word[2]
+						title = re.split(' ', line[3], 1)[1]
+						flag = False
+						tempmsg = ""
+						lock.acquire()
+						for r in rfc:
+							if r.rfcno == rfcno and r.title == title:
+								flag = True
+								for hp in r.hostportlist:
+									tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
+						lock.release()
+						tempmsg.strip()
+						if flag:
+							tmpmsg = "P2P-CI/1.0 200 OK\n%s" %tempmsg
+							self.client.send(bytes(tmpmsg,'UTF-8'))
+						else:
+							tmpmsg = "P2P-CI/1.0 404 Not Found\n"
+							self.client.send(bytes(tmpmsg,'UTF-8'))
+					elif(word[0]=='LIST'):
+						tempmsg = ""
+						lock.acquire()
+						for r in rfc:
 							for hp in r.hostportlist:
 								tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
-					lock.release()
-					tempmsg.strip()
-					if flag:
+						lock.release()
+						#displayRFC()
+						tempmsg.strip()
 						tmpmsg = "P2P-CI/1.0 200 OK\n%s" %tempmsg
+						#print(tmpmsg)
 						self.client.send(bytes(tmpmsg,'UTF-8'))
-					else:
-						tmpmsg = "P2P-CI/1.0 404 Not Found\n"
+					else: # 400 Bad Request
+						tmpmsg = "P2P-CI/1.0 400 Bad Request"
 						self.client.send(bytes(tmpmsg,'UTF-8'))
-				elif(word[0]=='LIST'):
-					tempmsg = ""
-					lock.acquire()
-					for r in rfc:
-						for hp in r.hostportlist:
-							tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
-					lock.release()
-					displayRFC()
-					tempmsg.strip()
-					tmpmsg = "P2P-CI/1.0 200 OK\n%s" %tempmsg
-					print(tmpmsg)
-					self.client.send(bytes(tmpmsg,'UTF-8'))			
+				else:
+					tmpmsg = "P2P-CI/1.0 505 P2P-CI Version Not Supported"
+					self.client.send(bytes(tmpmsg,'UTF-8'))
 			except Exception as e:
 				print(self.addr[0] + "  Client ends connection  " + str(self.addr[1]))
 				#print(host + "  Client ends connection  " + port)   
-				displayRFC()
+				#displayRFC()
 				print(host + "  Client's Upload Server also goes down  " + port)
 				RFC.remRFC(host, port)
-				displayRFC()
+				#displayRFC()
 				self.client.close()
 				break
 			
@@ -142,10 +148,12 @@ def main():
 	while True:
 		conn+=1
 		client, addr = s.accept()
-		print('*'*40)
+		print()
+		print('*'*20 + "Msg Start" + '*'*20)
 		print(client)
 		print(addr)
-		print('*'*40)
+		print('*'*20 + "Msg End" + '*'*22)
+		print()
 		thread = myThread(client, addr)
 		thread.start()		
 	
