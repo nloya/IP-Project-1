@@ -101,6 +101,8 @@ class pseudoThread(): # Not a THREAD
 				temprfcno = getinput("Enter RFC# to query to Server: ")
 				temptitle = input("Enter the Title of the RFC: ")
 				tmpmsg = "LOOKUP RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(temprfcno,socket.gethostbyname(socket.gethostname()),self.upport,temptitle)
+				#tmpmsg = "LOOKUP RFC %s P2P-CI/1.1\nHost: %s\nPort: %s\nTitle: %s" %(temprfcno,socket.gethostbyname(socket.gethostname()),self.upport,temptitle)
+				#tmpmsg = "LOOK RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(temprfcno,socket.gethostbyname(socket.gethostname()),self.upport,temptitle)
 				self.sock.send(bytes(tmpmsg,'UTF-8'))
 				print('*'*40)				
 				msg=self.sock.recv(4096).rstrip()
