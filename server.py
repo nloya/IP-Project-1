@@ -54,8 +54,8 @@ class RFC():
 class myThread (threading.Thread):
 	def __init__(self, client, addr):
 		threading.Thread.__init__(self)
-		self.client = client # 
-		self.addr = addr # ('169.254.96.162', 57761)
+		self.client = client 
+		self.addr = addr 
 		
 	
 	def run(self):		
@@ -70,23 +70,23 @@ class myThread (threading.Thread):
 				word = line[0].split(' ')
 				host = line[1].split(' ')[1]			
 				port = line[2].split(' ')[1]
-				if(word[3] == 'P2P-CI/1.0'):
-					if(word[0]=='ADD'):
+				
+				if(word[0]=='ADD'):
+					if(word[3] == 'P2P-CI/1.0'):
 						rfcno = word[2]					
 						''' use of RegEx to get spaced title'''
-						title = re.split(' ', line[3], 1)[1] 
-						#print("\n%s %s %s %s" %(rfcno,host,port,title))
-						#p = Peers(host,port)
+						title = re.split(' ', line[3], 1)[1]
 						lock.acquire()
-						Peers.addPeer(host,port) # adds only if the peer is not already present
-						#displayPeer()
+						Peers.addPeer(host,port) # adds only if the peer is not already present						
 						RFC.addRFC(rfcno,title,host,port)
 						lock.release()
-						#displayRFC()
-						#print("Message: %s" %len(msg))
 						tmpmsg = "P2P-CI/1.0 200 OK\nRFC %s %s %s %s" %(rfcno,title,host,port)
 						self.client.send(bytes(tmpmsg, 'UTF-8'))
-					elif(word[0]=='LOOKUP'):
+					else:
+						tmpmsg = "P2P-CI/1.0 505 P2P-CI Version Not Supported"
+						self.client.send(bytes(tmpmsg,'UTF-8'))
+				elif(word[0]=='LOOKUP'):
+					if(word[3] == 'P2P-CI/1.0'):
 						rfcno = word[2]
 						title = re.split(' ', line[3], 1)[1]
 						flag = False
@@ -105,42 +105,39 @@ class myThread (threading.Thread):
 						else:
 							tmpmsg = "P2P-CI/1.0 404 Not Found\n"
 							self.client.send(bytes(tmpmsg,'UTF-8'))
-					elif(word[0]=='LIST'):
+					else:
+						tmpmsg = "P2P-CI/1.0 505 P2P-CI Version Not Supported"
+						self.client.send(bytes(tmpmsg,'UTF-8'))
+				elif(word[0]=='LIST'):
+					if(word[2] == 'P2P-CI/1.0'):
 						tempmsg = ""
 						lock.acquire()
 						for r in rfc:
 							for hp in r.hostportlist:
 								tempmsg += ("%s %s %s %s\n" %(r.rfcno,r.title,hp.host,hp.port))
-						lock.release()
-						#displayRFC()
+						lock.release()						
 						tempmsg.strip()
-						tmpmsg = "P2P-CI/1.0 200 OK\n%s" %tempmsg
-						#print(tmpmsg)
+						tmpmsg = "P2P-CI/1.0 200 OK\n%s" %tempmsg						
 						self.client.send(bytes(tmpmsg,'UTF-8'))
-					else: # 400 Bad Request
-						tmpmsg = "P2P-CI/1.0 400 Bad Request"
+					else:
+						tmpmsg = "P2P-CI/1.0 505 P2P-CI Version Not Supported"
 						self.client.send(bytes(tmpmsg,'UTF-8'))
-				else:
-					tmpmsg = "P2P-CI/1.0 505 P2P-CI Version Not Supported"
-					self.client.send(bytes(tmpmsg,'UTF-8'))
+				else: # 400 Bad Request
+					tmpmsg = "P2P-CI/1.0 400 Bad Request"
+					self.client.send(bytes(tmpmsg,'UTF-8'))				
 			except Exception as e:
+				print("Error %s" %e)
 				print(self.addr[0] + "  Client ends connection  " + str(self.addr[1]))
-				#print(host + "  Client ends connection  " + port)   
-				#displayRFC()
 				print(host + "  Client's Upload Server also goes down  " + port)
-				RFC.remRFC(host, port)
-				#displayRFC()
+				RFC.remRFC(host, port)				
 				self.client.close()
 				break
 			
-
-
 def main():
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	print(s)
 	host = socket.gethostbyname(socket.gethostname())
 	port = 7734
-	#print host
 	s.bind((host, port))
 	prev = []
 	s.listen(5)

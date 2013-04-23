@@ -39,8 +39,7 @@ class myThread (threading.Thread):
 				print(client)
 				print(addr)
 				print('*'*40) 
-				
-				#s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+								
 				thread = myThread("replytopeer", client=client,addr=addr)
 				thread.start()
 		else: # cmp(self.opt,"replytopeer")==0
@@ -75,10 +74,6 @@ class myThread (threading.Thread):
 
 class pseudoThread(): # Not a THREAD
 	def __init__(self, opt, sock=None, client=None, addr=None, uphost=None, upport=None, option=None):
-		#self.host = host
-		#self.port = port
-		
-		#threading.Thread.__init__(self)
 		self.opt = opt
 		self.option = option
 		self.sock = sock
@@ -88,12 +83,10 @@ class pseudoThread(): # Not a THREAD
 		self.addr = addr
 	
 	def start(self):
-		if(self.opt=="server"): #connect to server
-			#print("In If %s --- %s" %(self.opt,self))
+		if(self.opt=="server"): #connect to server			
 			if(self.option==2):
 				global rfcsent
-				while(rfcsent != len(rfc)):
-					#self.sock.recv(1024)
+				while(rfcsent != len(rfc)):					
 					tmpmsg = "ADD RFC %s P2P-CI/1.0\nHost: %s\nPort: %s\nTitle: %s" %(rfc[rfcsent].rfcno,socket.gethostbyname(socket.gethostname()),self.upport,rfc[rfcsent].rfcdesc)					
 					self.sock.send(bytes(tmpmsg,'UTF-8'))
 					tmpmsg = self.sock.recv(1024)
@@ -119,8 +112,7 @@ class pseudoThread(): # Not a THREAD
 				print()
 								
 				lines = msg.split('\n')				
-				
-				#print("Select Option")
+								
 				for i in range(1,len(lines)):
 					print(str(i) + " --> " + lines[i])
 				print("0 --> Do Nothing")
@@ -147,11 +139,6 @@ class pseudoThread(): # Not a THREAD
 					getdata(lines[x])
 
 def main():
-	#rfcsent = 0
-	#rfcno = getinput("Enter RFC#: ")
-	#rfcdesc = raw_input("Enter Title for RFC: ")		
-	#rfc.append(RFC(rfcno,rfcdesc))
-	#print("RFC# %s having Title: \"%s\" added to the list. Total Count of RFCs: %s" %(rfc[len(rfc)-1].rfcno, rfc[len(rfc)-1].rfcdesc, len(rfc)))
 	uploadServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	uploadServerHost = socket.gethostbyname(socket.gethostname())
 	uploadServerPort = random.randint(49152,65535)
@@ -160,26 +147,18 @@ def main():
 	print("Listening on Host: %s & Port: %s" %(uploadServerHost,uploadServerPort))
 	thread = myThread("upload", sock=uploadServer,uphost=uploadServerHost,upport=uploadServerPort)
 	thread.start()
-	
-	#Creating thread for 
-	#print("Server starts...")
-	
-	#print s
+
 	host = socket.gethostbyname(socket.gethostname())
 	port = 7734
 	
-	#msg = pickle.loads(s.recv(1024))
 	count = 0
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((host, port))
-	while(True):
-		#time.sleep(3)
+	while(True):	
 		print(ipstr)
 		try:
 			option = int(input()) # input() gives integer and raw_input() gives string
 			if(option==1):		
-				#rfcno = raw_input("Enter RFC#: ")
-				#rfcdesc = raw_input("Enter Title for RFC: ")		
 				rfcno = getinput("Enter RFC#: ")
 				rfcdesc = input("Enter Title for RFC: ")
 				rfcPresent = False
@@ -203,7 +182,7 @@ def main():
 				print("Incorrect Option Entered")
 				#print ipstr
 		except ValueError:
-			print("Invalid Characters Entered")
+			print("Invalid Characters Entered.")
 
 def getinput(msg):
 	try:
@@ -228,8 +207,7 @@ def getdata(line):
 	print('*'*20 + "Msg Start" + '*'*20)
 	print(msg)
 	print('*'*20 + "Msg End" + '*'*22)
-	print()
-	print(ipstr)
+	print()	
 	lines = msg.split('\n')
 	words = lines[0].split(' ')
 	if (words[1]=='200'): # (words[0]=='P2P-CI/1.0') and (words[1]=='200')
@@ -239,10 +217,6 @@ def getdata(line):
 				f.write(lines[i])
 			f.close()
 		except IOError as e:
-			print("File Not Found")
-	s.close()
-	#thread = myThread("reqfrompeer",sock=s, msg = msg)
-	#thread.start()
-	
+			print("File Not Found")	
 
 main()
